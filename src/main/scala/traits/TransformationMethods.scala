@@ -4,6 +4,19 @@ import transformations.Transformation
 import types.GameMap
 
 trait TransformationMethods {
+  
+  def rotate90DegreesClockwise: Transformation[GameMap]
+
+  def rotate90DegreesCounterClockwise: Transformation[GameMap]
+
+  def reflectHorizontally: Transformation[GameMap]
+
+  def reflectVertically: Transformation[GameMap]
+
+  def reflectDiagonally: Transformation[GameMap]
+
+  def translate(dx: Int, dy: Int): Transformation[GameMap]
+
   def addRowBefore: Transformation[GameMap]
 
   def addRowAfter: Transformation[GameMap]
@@ -19,18 +32,6 @@ trait TransformationMethods {
   def removeFirstColumn: Transformation[GameMap]
 
   def removeLastColumn: Transformation[GameMap]
-
-  def rotate90DegreesClockwise: Transformation[GameMap]
-
-  def rotate90DegreesCounterClockwise: Transformation[GameMap]
-
-  def reflectHorizontally: Transformation[GameMap]
-
-  def reflectVertically: Transformation[GameMap]
-
-  def reflectDiagonally: Transformation[GameMap]
-
-  def translate(dx: Int, dy: Int): Transformation[GameMap]
-
+  
   def centralSymmetry: Transformation[GameMap]
 }
