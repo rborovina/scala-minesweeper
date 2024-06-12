@@ -226,9 +226,8 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
 
     val submap = mapCreationController.selectSubmap(startRow, startCol, numRows, numCols)
 
-    selectedOperations += (("Merge Maps", mapCreationController.mergeMaps(mapCreationController.getMap)(startRow, startCol, transparent)))
-
-    val transformations: Array[Transformation[GameMap]] = selectedOperations.map(_._2).toArray
+    val transformations: Array[Transformation[GameMap]] = selectedOperations.map(_._2).toArray :+
+      mapCreationController.mergeMaps(mapCreationController.getMap)(startRow, startCol, transparent)
 
     mapCreationController = mapCreationController.updateWithTransformations(submap)(transformations)
     drawScreen(mapCreationController)
