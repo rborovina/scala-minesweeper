@@ -4,6 +4,7 @@ import actions.LoadGameAction
 import controller.MapCreationController
 import model.BombCell
 import traits.{BoardManager, MapDifficulty, ScreenManager}
+import transformations.Transformation
 import types.GameMap
 
 import java.nio.file.Paths
@@ -128,7 +129,7 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
 
   override protected def handleCellRightClicked(row: Int, col: Int): Unit = {}
 
-  private def updateGrid(transform: GameMap => GameMap): Unit = {
+  private def updateGrid(transform: Transformation): Unit = {
     mapCreationController = mapCreationController.withUpdatedMap(transform)
     drawScreen(mapCreationController)
   }

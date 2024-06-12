@@ -2,6 +2,7 @@ package controller
 
 import model.{BombCell, EmptyCell}
 import traits.{BoardManager, MapDifficulty}
+import transformations.Transformation
 import types.{Board, GameMap, GameSequence}
 
 import scala.annotation.tailrec
@@ -50,43 +51,97 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap) e
     board.flatten.count(_.isFlagged)
   }
 
-  def addRowBefore: GameMap => GameMap = { existingMap =>
+  def addRowBefore: Transformation = Transformation { existingMap =>
+    val columns: Int = if (existingMap.isEmpty || existingMap(0).isEmpty) 0 else existingMap(0).length
     val newRow = Array.fill(columns)('-')
     newRow +: existingMap
   }
 
-  def addRowAfter: GameMap => GameMap = { existingMap =>
+  def addRowAfter: Transformation = Transformation { existingMap =>
+    val columns: Int = if (existingMap.isEmpty || existingMap(0).isEmpty) 0 else existingMap(0).length
     val newRow = Array.fill(columns)('-')
     existingMap :+ newRow
   }
 
-  def addColumnBefore: GameMap => GameMap = { existingMap =>
+  def addColumnBefore: Transformation = Transformation { existingMap =>
     existingMap.map(row => '-' +: row)
   }
 
-  def addColumnAfter: GameMap => GameMap = { existingMap =>
+  def addColumnAfter: Transformation = Transformation { existingMap =>
     existingMap.map(row => row :+ '-')
   }
 
-  def removeFirstRow: GameMap => GameMap = { existingMap =>
+  def removeFirstRow: Transformation = Transformation { existingMap =>
     if (existingMap.nonEmpty) existingMap.tail else existingMap
   }
 
-  def removeLastRow: GameMap => GameMap = { existingMap =>
+  def removeLastRow: Transformation = Transformation { existingMap =>
     if (existingMap.nonEmpty) existingMap.init else existingMap
   }
 
-  def removeFirstColumn: GameMap => GameMap = { existingMap =>
+  def removeFirstColumn: Transformation = Transformation { existingMap =>
     if (existingMap.nonEmpty && existingMap.head.nonEmpty) existingMap.map(_.tail) else existingMap
   }
 
-  def removeLastColumn: GameMap => GameMap = { existingMap =>
+  def removeLastColumn: Transformation = Transformation { existingMap =>
     if (existingMap.nonEmpty && existingMap.head.nonEmpty) existingMap.map(_.init) else existingMap
   }
 
+  def rotate90DegreesClockwise: Transformation = Transformation { existingMap =>
+    val transposed = existingMap.transpose
+    transposed.map(_.reverse)
+  }
 
-  def withUpdatedMap(f: GameMap => GameMap): MapCreationController = {
+  def rotate90DegreesCounterClockwise: Transformation = Transformation { existingMap =>
+    val transposed = existingMap.transpose
+    transposed.reverse
+  }
+
+  def reflectHorizontally: Transformation = Transformation { existingMap =>
+    existingMap.map(_.reverse)
+  }
+
+  def reflectVertically: Transformation = Transformation { existingMap =>
+    existingMap.reverse
+  }
+
+  def reflectDiagonally: Transformation = Transformation { existingMap =>
+    val transposed = existingMap.transpose
+    transposed.map(_.reverse)
+  }
+
+  def inverse(transformation: Transformation): Transformation = Transformation { existingMap =>
+    transformation(transformation(transformation(transformation(existingMap))))
+  }
+
+  def translate(dx: Int, dy: Int): Transformation = Transformation { existingMap =>
+    if (dx == 0 && dy == 0) existingMap
+    else {
+      val newMap = Array.fill(rows + math.abs(dy))(Array.fill(columns + math.abs(dx))('-'))
+      for (r <- existingMap.indices; c <- existingMap(r).indices) {
+        val newRow = r + (if (dy > 0) dy else 0)
+        val newCol = c + (if (dx > 0) dx else 0)
+        newMap(newRow)(newCol) = existingMap(r)(c)
+      }
+      newMap
+    }
+  }
+
+  def centralSymmetry: Transformation = Transformation { existingMap =>
+    reflectVertically.andThen(reflectHorizontally)(existingMap)
+  }
+
+  def withUpdatedMap(f: Transformation): MapCreationController = {
     copy(map = f(map))
+  }
+
+  private def applyTransformations(transformations: Transformation): GameMap = {
+    transformations(map)
+  }
+
+  def updateMapWithTransformations(transformations: Transformation): MapCreationController = {
+    val newMap = applyTransformations(transformations)
+    copy(map = newMap)
   }
 
   def isMapValid: Boolean = {
