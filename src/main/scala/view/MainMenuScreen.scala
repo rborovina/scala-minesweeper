@@ -1,11 +1,12 @@
 package view
 
+import helpers.{FileHelper, GameHelper}
 import traits.ScreenManager
 import view.dialogs.GameSelectionDialog
 
 import scala.swing.Swing.{EmptyBorder, VStrut}
 import scala.swing.event.ButtonClicked
-import scala.swing.{Alignment, BorderPanel, BoxPanel, Button, Dialog, GridPanel, Label, MainFrame, Orientation}
+import scala.swing.{Alignment, BorderPanel, BoxPanel, Button, Dialog, GridPanel, Label, MainFrame, Orientation, ScrollPane}
 
 class MainMenuScreen(screenManager: ScreenManager) extends MainFrame {
   title = "Minesweeper"
@@ -56,7 +57,7 @@ class MainMenuScreen(screenManager: ScreenManager) extends MainFrame {
         close()
       })
     case ButtonClicked(`viewScoresButton`) =>
-      Dialog.showMessage(null, "View best scores clicked", title = "Best Scores")
+      displayBestScores()
   }
 
   contents = new BorderPanel {
@@ -76,4 +77,14 @@ class MainMenuScreen(screenManager: ScreenManager) extends MainFrame {
     border = EmptyBorder(10, 10, 10, 10)
   }
 
+  private def displayBestScores(): Unit = {
+    FileHelper.readCompletedGames() match {
+      case scala.util.Success(games) if games.nonEmpty =>
+        new ScoresScreen(games).visible = true
+      case scala.util.Success(_) =>
+        Dialog.showMessage(this, "No completed games to display.", title = "Best Scores")
+      case scala.util.Failure(_) =>
+        Dialog.showMessage(this, "No completed games to display.", title = "Best Scores")
+    }
+  }
 }

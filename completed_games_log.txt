@@ -1,1 +1,4 @@
-Game Name: game_20240612221434.txt, Bombs: 0, Hints: 0, Rows: 3, Cols: 5, Time: 1718223282
+Game Name: game_20240612222540.txt, Score: -28637066, Bombs: 0, Hints: 0, Rows: 3, Cols: 5, Time: 1718223962
+Game Name: game_20240612223619.txt, Score: -28637076, Bombs: 0, Hints: 0, Rows: 3, Cols: 5, Time: 1718224585
+Game Name: game_20240612224118.txt, Score: -28637081, Bombs: 0, Hints: 0, Rows: 3, Cols: 5, Time: 1718224884
+Game Name: game_20240612224328.txt, Score: -28637083, Bombs: 0, Hints: 0, Rows: 3, Cols: 5, Time: 1718225016

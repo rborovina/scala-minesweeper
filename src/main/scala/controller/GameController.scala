@@ -2,7 +2,7 @@ package controller
 
 import actions.UserAction
 import actions.UserAction.{Hint, LeftClick, RightClick}
-import helpers.FileHelper
+import helpers.{FileHelper, GameHelper}
 import model.{BombCell, Cell, EmptyCell}
 import traits.{BoardManager, MapDifficulty}
 import types.{Board, GameMap, GameSequence}
@@ -229,12 +229,16 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
     }
   }
 
-  def getHintsCount: Int = gameSequence.count(_._1 == UserAction.Hint)
+  private def getHintsCount: Int = gameSequence.count(_._1 == UserAction.Hint)
 
   private def logGameCompletion(): Unit = {
     val (gameId, difficulty, map, gameSequence, elapsedTime) = getGameData
 
-    FileHelper.logCompletedGame(gameId, totalBombs, getHintsCount, rows, columns, elapsedTime) match {
+    val score = GameHelper.calculateScore(totalBombs, getHintsCount, getElapsedTime)
+
+    println(getElapsedTime)
+
+    FileHelper.logCompletedGame(gameId, score, totalBombs, getHintsCount, rows, columns, getElapsedTime) match {
       case Success(_) => println(s"Game $gameId logged successfully.")
       case Failure(ex) => println(s"Failed to log game $gameId: ${ex.getMessage}")
     }

@@ -3,7 +3,7 @@ package helpers
 import actions.UserAction
 import types.{GameMap, GameSequence}
 
-import java.io.{BufferedWriter, FileWriter}
+import java.io.{BufferedWriter, FileNotFoundException, FileWriter}
 import scala.io.Source
 import scala.util.{Try, Using}
 
@@ -58,9 +58,24 @@ object FileHelper {
     (map, gameSequence, elapsedTime)
   }
 
-  def logCompletedGame(gameName: String, bombs: Int, hints: Int, rows: Int, cols: Int, time: Int): Try[Unit] = {
+  def logCompletedGame(gameName: String, score: Int, bombs: Int, hints: Int, rows: Int, cols: Int, time: Int): Try[Unit] = {
     Using(new BufferedWriter(new FileWriter("completed_games_log.txt", true))) { writer =>
-      writer.write(s"Game Name: $gameName, Bombs: $bombs, Hints: $hints, Rows: $rows, Cols: $cols, Time: $time\n")
+      writer.write(s"Game Name: $gameName, Score: $score, Bombs: $bombs, Hints: $hints, Rows: $rows, Cols: $cols, Time: $time\n")
+    }
+  }
+
+  def readCompletedGames(logFilePath: String = "completed_games_log.txt"): Try[List[Map[String, String]]] = {
+    Try {
+      Using(Source.fromFile(logFilePath)) { source =>
+        source.getLines().toList.map { line =>
+          val parts = line.split(", ").map(_.split(": ")).collect {
+            case Array(key, value) => key -> value
+          }.toMap
+          parts
+        }
+      }.getOrElse(List.empty)
+    } recoverWith {
+      case _: FileNotFoundException => Try(List.empty)
     }
   }
 }

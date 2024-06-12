@@ -45,7 +45,7 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
 
   private val timer = new Timer(1000, ActionListener(_ => updateElapsedTime()))
 
-  override protected val controlPanel: GridPanel = new GridPanel(1, 4) // Adjust columns to fit the hint button
+  override protected val controlPanel: GridPanel = new GridPanel(1, 4)
   override protected val gridPanel: GridPanel = new GridPanel(gameController.rows, gameController.columns)
 
   timer.start()
@@ -105,7 +105,7 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
     controlPanel.contents.clear()
     controlPanel.contents += new Label("Bombs: " + boardManager.totalBombs)
     controlPanel.contents += new Label("Flags: " + boardManager.totalFlags)
-    controlPanel.contents += new Label(s"Time: ${gameController.getElapsedTime}") // Show elapsed time
+    controlPanel.contents += new Label(s"Time: ${gameController.getElapsedTime}")
 
     controlPanel.contents += new Button("Hint") {
       reactions += {
