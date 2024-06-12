@@ -1,7 +1,7 @@
 package controller
 
 import actions.UserAction
-import actions.UserAction.{LeftClick, RightClick}
+import actions.UserAction.{Hint, LeftClick, RightClick}
 import model.{BombCell, Cell, EmptyCell}
 import traits.{BoardManager, MapDifficulty}
 import types.{Board, GameMap, GameSequence}
@@ -42,6 +42,7 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
         val updatedBoard = action match {
           case LeftClick => handleLeftClick(currentBoard, row, col)
           case RightClick => handleRightClick(currentBoard, row, col)
+          case Hint => handleLeftClick(currentBoard, row, col)
         }
         applyActions(updatedBoard, sequences, index + 1)
       }
@@ -189,15 +190,31 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
   private def revealAllCells(board: Board): Board = {
     board.map(_.map(cell => cell.reveal()))
   }
-  
+
   def getMapDifficulty: MapDifficulty = MapDifficulty.fromName(difficulty)
 
   private def copy(gameSequence: GameSequence): GameController = {
     new GameController(gameId, difficulty, map, gameSequence, onGameOver, onGameWon)
   }
-  
+
   override def getGameData: (String, String, GameMap, GameSequence) = {
     (gameId, difficulty, map, gameSequence)
+  }
+
+  def provideHint(): GameController = {
+    val safeCells = for {
+      (row, rowIndex) <- board.zipWithIndex
+      (cell, colIndex) <- row.zipWithIndex
+      if !cell.isInstanceOf[BombCell] && !cell.isRevealed && !cell.isFlagged
+    } yield (rowIndex, colIndex)
+
+    if (safeCells.nonEmpty) {
+      val (hintRow, hintCol) = safeCells(scala.util.Random.nextInt(safeCells.length))
+
+      copy(gameSequence :+ (UserAction.Hint, hintRow, hintCol))
+    } else {
+      this
+    }
   }
 
 }

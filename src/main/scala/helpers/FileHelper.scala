@@ -25,6 +25,7 @@ object FileHelper {
       val action = parts(0) match {
         case "L" => UserAction.LeftClick
         case "R" => UserAction.RightClick
+        case "H" => UserAction.Hint
       }
       (action, parts(1).toInt, parts(2).toInt)
     })
@@ -37,6 +38,7 @@ object FileHelper {
         val actionString = action match {
           case UserAction.LeftClick => "L"
           case UserAction.RightClick => "R"
+          case UserAction.Hint => "H"
         }
         writer.write(s"$actionString,$row,$col\n")
       }

@@ -1,11 +1,11 @@
 import traits.ScreenManager
-import view.{GameScreen, MainMenuScreen}
+import view.{MainMenuScreen}
 
-import scala.swing.{Frame, MainFrame, SimpleSwingApplication}
+import scala.swing.{Frame, SimpleSwingApplication}
 
 object App extends SimpleSwingApplication with ScreenManager{
   private var currentScreen: Option[Frame] = None
-  
+
   def top = new MainMenuScreen(this)
 
   override def switchScreen(newScreen: Frame): Unit = {

@@ -1,5 +1,5 @@
 package actions
 
 enum UserAction {
-  case LeftClick, RightClick
+  case LeftClick, RightClick, Hint
 }

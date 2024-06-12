@@ -4,9 +4,9 @@ import actions.LoadGameAction
 import helpers.GameHelper
 import types.{GameMap, GameSequence}
 
-import scala.swing.{BoxPanel, ComboBox, Dialog, Label, ListView, MainFrame, Orientation, ScrollPane, TextField}
+import scala.swing.{BoxPanel, Button, ComboBox, Dialog, Label, ListView, MainFrame, Orientation, ScrollPane, TextField}
 import scala.swing.event.SelectionChanged
-import scala.swing.Swing.*
+import scala.swing.Swing._
 
 object GameSelectionDialog {
 
@@ -18,11 +18,14 @@ object GameSelectionDialog {
     mapList.selection.intervalMode = ListView.IntervalMode.Single
     mapList.peer.setVisibleRowCount(5)
 
+    val randomMapButton = new Button("Select Random Map")
+
     val panel = new BoxPanel(Orientation.Vertical) {
       contents += new Label("Select Game Difficulty")
       contents += difficultyComboBox
       contents += new Label("Select Map:")
       contents += new ScrollPane(mapList)
+      contents += randomMapButton
       border = EmptyBorder(10, 10, 10, 10)
     }
 
@@ -40,10 +43,24 @@ object GameSelectionDialog {
         val selectedDifficulty = difficultyComboBox.selection.item
         refreshMapList(selectedDifficulty)
     }
-
+    
     val frame = new MainFrame()
     frame.visible = true
-
+    
+    randomMapButton.reactions += {
+      case scala.swing.event.ButtonClicked(_) =>
+        if (mapList.listData.nonEmpty) {
+          val randomMap = mapList.listData(scala.util.Random.nextInt(mapList.listData.size))
+          val selectedDifficulty = difficultyComboBox.selection.item
+          LoadGameAction.loadGame(selectedDifficulty, randomMap) { (map, gameSequence) =>
+            callback(GameHelper.generateUniqueFilename(), selectedDifficulty, map, gameSequence)
+            frame.close()
+          }
+        } else {
+          Dialog.showMessage(null, "No maps available to select randomly.", title = "Error")
+        }
+    }
+    
     val result = Dialog.showConfirmation(
       frame,
       panel.peer,
@@ -75,14 +92,32 @@ object GameSelectionDialog {
       mapList.listData = maps
     }
 
+    val randomMapButton = new Button("Select Random Map")
+
     val panel = new BoxPanel(Orientation.Vertical) {
       contents += new Label("Select Game:")
       contents += new ScrollPane(mapList)
+      contents += randomMapButton
       border = EmptyBorder(10, 10, 10, 10)
     }
 
     val frame = new MainFrame()
     frame.visible = true
+    
+    randomMapButton.reactions += {
+      case scala.swing.event.ButtonClicked(_) =>
+        if (mapList.listData.nonEmpty) {
+          val randomMap = mapList.listData(scala.util.Random.nextInt(mapList.listData.size))
+          LoadGameAction.loadGame("Games", randomMap) { (map, gameSequence) =>
+            callback(randomMap, map, gameSequence)
+            frame.close()
+          }
+        } else {
+          Dialog.showMessage(null, "No maps available to select randomly.", title = "Error")
+        }
+    }
+
+    
 
     val result = Dialog.showConfirmation(
       frame,
@@ -165,6 +200,4 @@ object GameSelectionDialog {
       }
     }
   }
-
-
 }

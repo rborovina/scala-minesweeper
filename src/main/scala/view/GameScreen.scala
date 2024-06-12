@@ -25,7 +25,7 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
 
   private var gameController: GameController = GameController(gameId, difficulty, map, gameSequence, onGameOver = handleGameOver, onGameWon = handleGameWon)
 
-  override protected val controlPanel: GridPanel = new GridPanel(1, 3)
+  override protected val controlPanel: GridPanel = new GridPanel(1, 4) // Adjust columns to fit the hint button
   override protected val gridPanel: GridPanel = new GridPanel(gameController.rows, gameController.columns)
 
   drawScreen(gameController)
@@ -80,6 +80,14 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
     controlPanel.contents += new Label("Bombs: " + boardManager.totalBombs)
     controlPanel.contents += new Label("Flags: " + boardManager.totalFlags)
     controlPanel.contents += new Label("Time: 0") // TODO: Show actual time
+
+    controlPanel.contents += new Button("Hint") {
+      reactions += {
+        case ButtonClicked(_) =>
+          gameController = gameController.provideHint()
+          drawScreen(gameController)
+      }
+    }
 
     controlPanel.revalidate()
     controlPanel.repaint()
