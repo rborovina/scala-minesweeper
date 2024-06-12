@@ -17,7 +17,7 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
 
   private var mapCreationController: MapCreationController = MapCreationController(mapName, difficulty, map)
 
-  override protected val controlPanel: GridPanel = new GridPanel(1, 3)
+  override protected val controlPanel: GridPanel = new GridPanel(3, 3)
   override protected val gridPanel: GridPanel = new GridPanel(mapCreationController.rows, mapCreationController.columns)
 
   drawScreen(mapCreationController)
@@ -141,6 +141,34 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
     controlPanel.contents += new Label(s"Bombs: ${boardManager.totalBombs} (Min: ${mapDifficulty.bombsRange._1} Max: ${mapDifficulty.bombsRange._2})")
     controlPanel.contents += new Label(s"Rows: ${boardManager.rows} (Min: ${mapDifficulty.rowsRange._1} Max: ${mapDifficulty.rowsRange._2})")
     controlPanel.contents += new Label(s"Columns: ${boardManager.columns} (Min: ${mapDifficulty.columnsRange._1} Max: ${mapDifficulty.columnsRange._2})")
+
+    controlPanel.contents += new Button("Rotate Left") {
+      reactions += {
+        case ButtonClicked(_) => updateGrid(mapCreationController.rotate90DegreesCounterClockwise)
+      }
+    }
+    
+    controlPanel.contents += new Button("Rotate Right") {
+      reactions += {
+        case ButtonClicked(_) => updateGrid(mapCreationController.rotate90DegreesClockwise)
+      }
+    }
+    
+    controlPanel.contents += new Button("Reflect Horizontally") {
+      reactions += {
+        case ButtonClicked(_) => updateGrid(mapCreationController.reflectHorizontally)
+      }
+    }
+    controlPanel.contents += new Button("Reflect Vertically") {
+      reactions += {
+        case ButtonClicked(_) => updateGrid(mapCreationController.reflectVertically)
+      }
+    }
+    controlPanel.contents += new Button("Reflect Diagonally") {
+      reactions += {
+        case ButtonClicked(_) => updateGrid(mapCreationController.reflectDiagonally)
+      }
+    }
 
     controlPanel.border = EmptyBorder(10, 10, 10, 10)
 
