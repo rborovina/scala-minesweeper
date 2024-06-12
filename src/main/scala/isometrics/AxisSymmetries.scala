@@ -5,7 +5,6 @@ import transformations.Transformation
 import scala.reflect.ClassTag
 
 trait AxisSymmetries[T] {
-
   def rotate90DegreesClockwise(implicit ct: ClassTag[T]): Transformation[Array[Array[T]]] = Transformation(
     trans = { existingMap =>
       val transposed = existingMap.transpose
@@ -59,5 +58,4 @@ trait AxisSymmetries[T] {
     trans = reflectVertically.andThen(reflectHorizontally).trans,
     inv = reflectVertically.andThen(reflectHorizontally).trans
   )
-
 }

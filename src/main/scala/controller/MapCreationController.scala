@@ -59,14 +59,14 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     Transformation(
       trans = { existingMap =>
         val translatedMap = translate(dx, dy).trans(existingMap)
-        val newRows = translatedMap.length
-        val newCols = if (translatedMap.isEmpty) 0 else translatedMap.head.length
-        createMask(newRows, newCols).trans(translatedMap)
+        val newRows = existingMap.length - math.abs(dy)
+        val newCols = if (existingMap.isEmpty) 0 else existingMap.head.length - math.abs(dx)
+        val startX = math.abs(dx)
+        val startY = math.abs(dy)
+        createMask(newRows, newCols, startX, startY).trans(translatedMap)
       },
       inv = { existingMap =>
-        val newRows = existingMap.length
-        val newCols = if (existingMap.isEmpty) 0 else existingMap.head.length
-        createMask(newRows, newCols).inv(translate(-dx, -dy).inv(existingMap))
+        existingMap
       }
     )
   }
@@ -79,9 +79,9 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
 
   def addColumnAfter: Transformation[GameMap] = translate(-1, 0)
 
-  def removeFirstRow: Transformation[GameMap] = wrapTranslationWithMask(0, -1)
+  def removeFirstRow: Transformation[GameMap] = wrapTranslationWithMask(0, 1)
 
-  def removeLastRow: Transformation[GameMap] = wrapTranslationWithMask(0, 1)
+  def removeLastRow: Transformation[GameMap] = wrapTranslationWithMask(0, -1)
 
   def removeFirstColumn: Transformation[GameMap] = wrapTranslationWithMask(-1, 0)
 
