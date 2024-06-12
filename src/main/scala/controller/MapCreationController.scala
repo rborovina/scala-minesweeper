@@ -1,14 +1,18 @@
 package controller
 
+import isometrics.{AxisSymmetries, Translations}
 import model.{BombCell, EmptyCell}
-import traits.{BoardManager, MapDifficulty, TransformationMethods}
+import traits.{BoardManager, MapDifficulty}
 import transformations.Transformation
 import types.{Board, GameMap, GameSequence}
 
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
 class MapCreationController(mapName: String, difficulty: String, map: GameMap)
-  extends BoardManager with TransformationMethods {
+  extends BoardManager with AxisSymmetries[Char] with Translations[Char] {
+
+  implicit val ct: ClassTag[Char] = ClassTag.Char
 
   override val rows: Int = if (map.isEmpty) 0 else map.length
   override val columns: Int = if (map.isEmpty || map(0).isEmpty) 0 else map(0).length
@@ -51,77 +55,7 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     board.flatten.count(_.isFlagged)
   }
 
-  override def rotate90DegreesClockwise: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      val transposed = existingMap.transpose
-      transposed.map(_.reverse)
-    },
-    inv = { existingMap =>
-      val transposed = existingMap.transpose
-      transposed.reverse
-    }
-  )
-
-  override def rotate90DegreesCounterClockwise: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      val transposed = existingMap.transpose
-      transposed.reverse
-    },
-    inv = { existingMap =>
-      val transposed = existingMap.transpose
-      transposed.map(_.reverse)
-    }
-  )
-
-  override def reflectHorizontally: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      existingMap.map(_.reverse)
-    },
-    inv = { existingMap =>
-      existingMap.map(_.reverse)
-    }
-  )
-
-  override def reflectVertically: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      existingMap.reverse
-    },
-    inv = { existingMap =>
-      existingMap.reverse
-    }
-  )
-
-  override def reflectDiagonally: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      existingMap.transpose
-    },
-    inv = { existingMap =>
-      existingMap.transpose
-    }
-  )
-
-  def translate(dx: Int, dy: Int): Transformation[GameMap] = {
-    @tailrec
-    def translateHelper(dx: Int, dy: Int, accumulated: Transformation[GameMap]): Transformation[GameMap] = {
-      if (dx == 0 && dy == 0) accumulated
-      else if (dx > 0) {
-        translateHelper(dx - 1, dy, accumulated.andThen(reflectHorizontally.andThen(reflectHorizontally)))
-      } else if (dx < 0) {
-        translateHelper(dx + 1, dy, accumulated.andThen(reflectHorizontally))
-      } else if (dy > 0) {
-        translateHelper(dx, dy - 1, accumulated.andThen(reflectVertically.andThen(reflectVertically)))
-      } else {
-        translateHelper(dx, dy + 1, accumulated.andThen(reflectVertically))
-      }
-    }
-
-    val trans = translateHelper(dx, dy, Transformation(identity, identity))
-    val inv = translateHelper(-dx, -dy, Transformation(identity, identity))
-
-    Transformation(trans.trans, inv.trans)
-  }
-
-  def addEmptyRow(atStart: Boolean): Transformation[GameMap] = Transformation(
+  private def addEmptyRow(atStart: Boolean): Transformation[GameMap] = Transformation(
     trans = { existingMap =>
       val columns = if (existingMap.isEmpty || existingMap(0).isEmpty) 0 else existingMap(0).length
       val newRow = Array.fill(columns)('-')
@@ -134,7 +68,7 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     }
   )
 
-  def addEmptyColumn(atStart: Boolean): Transformation[GameMap] = Transformation(
+  private def addEmptyColumn(atStart: Boolean): Transformation[GameMap] = Transformation(
     trans = { existingMap =>
       if (atStart) existingMap.map(row => '-' +: row) else existingMap.map(row => row :+ '-')
     },
@@ -145,58 +79,21 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     }
   )
 
-  override def addRowBefore: Transformation[GameMap] = addEmptyRow(atStart = true)
+  def addRowBefore: Transformation[GameMap] = translate(0, -1)
 
-  override def addRowAfter: Transformation[GameMap] = addEmptyRow(atStart = false)
+  def addRowAfter: Transformation[GameMap] = translate(0, 1)
 
-  override def addColumnBefore: Transformation[GameMap] = addEmptyColumn(atStart = true)
+  def addColumnBefore: Transformation[GameMap] = translate(1, 0)
 
-  override def addColumnAfter: Transformation[GameMap] = addEmptyColumn(atStart = false)
+  def addColumnAfter: Transformation[GameMap] = translate(-1, 0)
 
-  override def removeFirstRow: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      if (existingMap.nonEmpty) existingMap.tail else existingMap
-    },
-    inv = { existingMap =>
-      val columns = if (existingMap.isEmpty || existingMap(0).isEmpty) 0 else existingMap(0).length
-      val newRow = Array.fill(columns)('-')
-      newRow +: existingMap
-    }
-  )
+  def removeFirstRow: Transformation[GameMap] = translate(0, -1)
 
-  override def removeLastRow: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      if (existingMap.nonEmpty) existingMap.init else existingMap
-    },
-    inv = { existingMap =>
-      val columns = if (existingMap.isEmpty || existingMap(0).isEmpty) 0 else existingMap(0).length
-      val newRow = Array.fill(columns)('-')
-      existingMap :+ newRow
-    }
-  )
+  def removeLastRow: Transformation[GameMap] = translate(0, 1)
 
-  override def removeFirstColumn: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      if (existingMap.nonEmpty && existingMap.head.nonEmpty) existingMap.map(_.tail) else existingMap
-    },
-    inv = { existingMap =>
-      existingMap.map(row => '-' +: row)
-    }
-  )
+  def removeFirstColumn: Transformation[GameMap] = translate(-1, 0)
 
-  override def removeLastColumn: Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      if (existingMap.nonEmpty && existingMap.head.nonEmpty) existingMap.map(_.init) else existingMap
-    },
-    inv = { existingMap =>
-      existingMap.map(row => row :+ '-')
-    }
-  )
-
-  override def centralSymmetry: Transformation[GameMap] = Transformation(
-    trans = reflectVertically.andThen(reflectHorizontally).trans,
-    inv = reflectVertically.andThen(reflectHorizontally).trans
-  )
+  def removeLastColumn: Transformation[GameMap] = translate(1, 0)
 
   def withUpdatedMap(f: Transformation[GameMap]): MapCreationController = {
     copy(map = f(map))
