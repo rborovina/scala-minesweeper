@@ -10,12 +10,18 @@ import types.GameMap
 import java.nio.file.Paths
 import javax.swing.ImageIcon
 import scala.swing.Swing.EmptyBorder
-import scala.swing.event.ButtonClicked
-import scala.swing.{Action, BorderPanel, BoxPanel, Button, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem, Orientation}
+import scala.swing.event.{ButtonClicked, MouseClicked}
+import scala.swing.{Action, BorderPanel, BoxPanel, Button, CheckBox, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem, Orientation, TextField, Swing}
 
 class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficulty: String, map: GameMap) extends BaseGridScreen(screenManager) {
 
   private var mapCreationController: MapCreationController = MapCreationController(mapName, difficulty, map)
+
+  private val startRowField: TextField = new TextField { columns = 3 }
+  private val startColField: TextField = new TextField { columns = 3 }
+  private val numRowsField: TextField = new TextField { columns = 3 }
+  private val numColsField: TextField = new TextField { columns = 3 }
+  private val transparentCheck: CheckBox = new CheckBox("Transparent")
 
   override protected val controlPanel: GridPanel = new GridPanel(3, 3)
   override protected val gridPanel: GridPanel = new GridPanel(mapCreationController.rows, mapCreationController.columns)
@@ -120,6 +126,39 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
       }
     }) = BorderPanel.Position.East
 
+    // Adding submap selection fields and buttons in a single row with border
+    layout(new BoxPanel(Orientation.Horizontal) {
+      contents += new Label("Start Row:")
+      contents += startRowField
+      contents += Swing.HStrut(10)
+      contents += new Label("Start Column:")
+      contents += startColField
+      contents += Swing.HStrut(10)
+      contents += new Label("Number of Rows:")
+      contents += numRowsField
+      contents += Swing.HStrut(10)
+      contents += new Label("Number of Columns:")
+      contents += numColsField
+      contents += Swing.HStrut(10)
+      contents += transparentCheck
+      contents += Swing.HStrut(10)
+      contents += new Button("Apply Transformation") {
+        reactions += {
+          case ButtonClicked(_) =>
+            val startRow = startRowField.text.toInt
+            val startCol = startColField.text.toInt
+            val numRows = numRowsField.text.toInt
+            val numCols = numColsField.text.toInt
+            val transparent = transparentCheck.selected
+
+            val submap = mapCreationController.selectSubmap(startRow, startCol, numRows, numCols)
+            val transformedSubmap = mapCreationController.rotate90DegreesClockwise.trans(submap)
+            mapCreationController = mapCreationController.mergeSubmap(startRow, startCol, transformedSubmap, transparent)
+            drawScreen(mapCreationController)
+        }
+      }
+      border = Swing.EmptyBorder(10, 10, 10, 10)
+    }) = BorderPanel.Position.South
   }
 
   override protected def handleCellClicked(row: Int, col: Int): Unit = {
@@ -127,7 +166,10 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
     drawScreen(mapCreationController)
   }
 
-  override protected def handleCellRightClicked(row: Int, col: Int): Unit = {}
+  override protected def handleCellRightClicked(row: Int, col: Int): Unit = {
+    startRowField.text = row.toString
+    startColField.text = col.toString
+  }
 
   private def updateGrid(transform: Transformation[GameMap]): Unit = {
     mapCreationController = mapCreationController.withUpdatedMap(transform)
@@ -189,7 +231,9 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
             .getImage.getScaledInstance(32, 32, java.awt.Image.SCALE_DEFAULT))
           case _ => null
         }
+        listenTo(mouse.clicks)
         reactions += {
+          case MouseClicked(_, _, c, _, _) if c != 0 => handleCellRightClicked(rowIndex, colIndex)
           case ButtonClicked(_) => handleCellClicked(rowIndex, colIndex)
         }
       })

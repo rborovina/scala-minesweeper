@@ -44,6 +44,31 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
 
   override def onCellRightClicked(row: Int, col: Int): MapCreationController = this
 
+  def selectSubmap(startRow: Int, startCol: Int, subRows: Int, subCols: Int): GameMap = {
+    map.slice(startRow, startRow + subRows).map(_.slice(startCol, startCol + subCols))
+  }
+
+  def mergeSubmap(
+                   startRow: Int,
+                   startCol: Int,
+                   submap: GameMap,
+                   transparent: Boolean
+                 ): MapCreationController = {
+    val updatedMap = map.zipWithIndex.map { case (row, rowIndex) =>
+      row.zipWithIndex.map { case (cell, colIndex) =>
+        if (rowIndex >= startRow && rowIndex < startRow + submap.length &&
+          colIndex >= startCol && colIndex < startCol + submap(0).length) {
+          val newRow = rowIndex - startRow
+          val newCol = colIndex - startCol
+          if (transparent && cell == '#') '#' else submap(newRow)(newCol)
+        } else {
+          cell
+        }
+      }
+    }
+    copy(updatedMap)
+  }
+  
   private def countTotalBombs(board: Board): Int = {
     board.flatten.count {
       case BombCell(_, _) => true
