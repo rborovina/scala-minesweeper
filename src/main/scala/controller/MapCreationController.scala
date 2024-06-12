@@ -145,13 +145,13 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     }
   )
 
-  override def addRowBefore: Transformation[GameMap] = translate(0, 1).andThen(addEmptyRow(atStart = true))
+  override def addRowBefore: Transformation[GameMap] = addEmptyRow(atStart = true)
 
-  override def addRowAfter: Transformation[GameMap] = translate(0, -1).andThen(addEmptyRow(atStart = false))
+  override def addRowAfter: Transformation[GameMap] = addEmptyRow(atStart = false)
 
-  override def addColumnBefore: Transformation[GameMap] = translate(1, 0).andThen(addEmptyColumn(atStart = true))
+  override def addColumnBefore: Transformation[GameMap] = addEmptyColumn(atStart = true)
 
-  override def addColumnAfter: Transformation[GameMap] = translate(-1, 0).andThen(addEmptyColumn(atStart = false))
+  override def addColumnAfter: Transformation[GameMap] = addEmptyColumn(atStart = false)
 
   override def removeFirstRow: Transformation[GameMap] = Transformation(
     trans = { existingMap =>
