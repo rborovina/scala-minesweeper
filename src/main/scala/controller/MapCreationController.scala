@@ -110,22 +110,35 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     val transposed = existingMap.transpose
     transposed.map(_.reverse)
   }
+  
+  def translate(dx: Int, dy: Int): Transformation[GameMap] = {
 
-  override def inverse(transformation: Transformation[GameMap]): Transformation[GameMap] = Transformation { existingMap =>
-    transformation(transformation(transformation(transformation(existingMap))))
-  }
+    def translateHelper(dx: Int, dy: Int, accumulated: Transformation[GameMap]): Transformation[GameMap] = {
+      if (dx == 0 && dy == 0) accumulated
+      else {
+        val horizontalShift: Transformation[GameMap] =
+          if (dx > 0) {
+            translateHelper(dx - 1, dy, accumulated.andThen(reflectHorizontally.andThen(reflectHorizontally)))
+          } else if (dx < 0) {
+            translateHelper(dx + 1, dy, accumulated.andThen(reflectHorizontally))
+          } else {
+            accumulated
+          }
 
-  override def translate(dx: Int, dy: Int): Transformation[GameMap] = Transformation { existingMap =>
-    if (dx == 0 && dy == 0) existingMap
-    else {
-      val newMap = Array.fill(rows + math.abs(dy))(Array.fill(columns + math.abs(dx))('-'))
-      for (r <- existingMap.indices; c <- existingMap(r).indices) {
-        val newRow = r + (if (dy > 0) dy else 0)
-        val newCol = c + (if (dx > 0) dx else 0)
-        newMap(newRow)(newCol) = existingMap(r)(c)
+        val verticalShift: Transformation[GameMap] =
+          if (dy > 0) {
+            translateHelper(dx, dy - 1, accumulated.andThen(reflectVertically.andThen(reflectVertically)))
+          } else if (dy < 0) {
+            translateHelper(dx, dy + 1, accumulated.andThen(reflectVertically))
+          } else {
+            accumulated
+          }
+
+        horizontalShift.andThen(verticalShift)
       }
-      newMap
     }
+
+    translateHelper(dx, dy, Transformation(identity))
   }
 
   override def centralSymmetry: Transformation[GameMap] = Transformation { existingMap =>

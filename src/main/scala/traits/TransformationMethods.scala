@@ -30,8 +30,6 @@ trait TransformationMethods {
 
   def reflectDiagonally: Transformation[GameMap]
 
-  def inverse(transformation: Transformation[GameMap]): Transformation[GameMap]
-
   def translate(dx: Int, dy: Int): Transformation[GameMap]
 
   def centralSymmetry: Transformation[GameMap]
