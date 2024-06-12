@@ -37,7 +37,6 @@ trait Translations[T] {
     }
   )
 
-
   private def shiftLeft(implicit ct: ClassTag[T]): Transformation[Array[Array[T]]] = Transformation(
     trans = { existingMap =>
       existingMap.map(row => row :+ null.asInstanceOf[T])

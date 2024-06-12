@@ -1,6 +1,6 @@
 package controller
 
-import isometrics.{AxisSymmetries, Translations}
+import isometrics.{AxisSymmetries, MaskTransformation, Translations}
 import model.{BombCell, EmptyCell}
 import traits.{BoardManager, MapDifficulty}
 import transformations.Transformation
@@ -10,7 +10,7 @@ import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
 class MapCreationController(mapName: String, difficulty: String, map: GameMap)
-  extends BoardManager with AxisSymmetries[Char] with Translations[Char] {
+  extends BoardManager with AxisSymmetries[Char] with Translations[Char] with MaskTransformation[Char] {
 
   implicit val ct: ClassTag[Char] = ClassTag.Char
 
@@ -55,29 +55,21 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     board.flatten.count(_.isFlagged)
   }
 
-  private def addEmptyRow(atStart: Boolean): Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      val columns = if (existingMap.isEmpty || existingMap(0).isEmpty) 0 else existingMap(0).length
-      val newRow = Array.fill(columns)('-')
-      if (atStart) newRow +: existingMap else existingMap :+ newRow
-    },
-    inv = { existingMap =>
-      if (existingMap.nonEmpty) {
-        if (atStart) existingMap.tail else existingMap.init
-      } else existingMap
-    }
-  )
-
-  private def addEmptyColumn(atStart: Boolean): Transformation[GameMap] = Transformation(
-    trans = { existingMap =>
-      if (atStart) existingMap.map(row => '-' +: row) else existingMap.map(row => row :+ '-')
-    },
-    inv = { existingMap =>
-      if (existingMap.nonEmpty && existingMap.head.nonEmpty) {
-        if (atStart) existingMap.map(_.tail) else existingMap.map(_.init)
-      } else existingMap
-    }
-  )
+  private def wrapTranslationWithMask(dx: Int, dy: Int): Transformation[GameMap] = {
+    Transformation(
+      trans = { existingMap =>
+        val translatedMap = translate(dx, dy).trans(existingMap)
+        val newRows = translatedMap.length
+        val newCols = if (translatedMap.isEmpty) 0 else translatedMap.head.length
+        createMask(newRows, newCols).trans(translatedMap)
+      },
+      inv = { existingMap =>
+        val newRows = existingMap.length
+        val newCols = if (existingMap.isEmpty) 0 else existingMap.head.length
+        createMask(newRows, newCols).inv(translate(-dx, -dy).inv(existingMap))
+      }
+    )
+  }
 
   def addRowBefore: Transformation[GameMap] = translate(0, -1)
 
@@ -87,13 +79,13 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
 
   def addColumnAfter: Transformation[GameMap] = translate(-1, 0)
 
-  def removeFirstRow: Transformation[GameMap] = translate(0, -1)
+  def removeFirstRow: Transformation[GameMap] = wrapTranslationWithMask(0, -1)
 
-  def removeLastRow: Transformation[GameMap] = translate(0, 1)
+  def removeLastRow: Transformation[GameMap] = wrapTranslationWithMask(0, 1)
 
-  def removeFirstColumn: Transformation[GameMap] = translate(-1, 0)
+  def removeFirstColumn: Transformation[GameMap] = wrapTranslationWithMask(-1, 0)
 
-  def removeLastColumn: Transformation[GameMap] = translate(1, 0)
+  def removeLastColumn: Transformation[GameMap] = wrapTranslationWithMask(1, 0)
 
   def withUpdatedMap(f: Transformation[GameMap]): MapCreationController = {
     copy(map = f(map))
