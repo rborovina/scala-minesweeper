@@ -7,54 +7,76 @@ import traits.{BoardManager, ScreenManager}
 import types.{GameMap, GameSequence}
 import view.dialogs.GameSelectionDialog
 
+import javax.swing.{ImageIcon, Timer}
+import java.nio.file.Paths
+import scala.swing
+import scala.swing.event.{ButtonClicked, MouseClicked}
+import scala.swing.{Action, BorderPanel, Button, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem}
+import actions.LoadGameAction
+import controller.GameController
+import model.{BombCell, Cell, EmptyCell}
+import traits.{BoardManager, ScreenManager}
+import types.{GameMap, GameSequence}
+import view.dialogs.GameSelectionDialog
+
 import javax.swing.ImageIcon
 import java.nio.file.Paths
 import scala.swing
 import scala.swing.event.{ButtonClicked, MouseClicked}
 import scala.swing.{Action, BorderPanel, Button, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem}
+import scala.concurrent.duration.*
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.swing.Swing.ActionListener
 
-class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence) extends BaseGridScreen(screenManager) {
+class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence, elapsedTime: Int) extends BaseGridScreen(screenManager) {
 
   private def handleGameOver(): Unit = {
+    timer.stop()
     Dialog.showMessage(null, "It's a bomb!", title = "Game over")
   }
 
   private def handleGameWon(): Unit = {
+    timer.stop()
     Dialog.showMessage(null, "You cleaned up the whole board!", title = "Game won!")
   }
 
-  private var gameController: GameController = GameController(gameId, difficulty, map, gameSequence, onGameOver = handleGameOver, onGameWon = handleGameWon)
+  private var gameController: GameController = new GameController(gameId, difficulty, map, gameSequence, elapsedTime, onGameOver = handleGameOver, onGameWon = handleGameWon).resumeTime()
+
+  private val timer = new Timer(1000, ActionListener(_ => updateElapsedTime()))
 
   override protected val controlPanel: GridPanel = new GridPanel(1, 4) // Adjust columns to fit the hint button
   override protected val gridPanel: GridPanel = new GridPanel(gameController.rows, gameController.columns)
 
+  timer.start()
   drawScreen(gameController)
 
   menuBar = new MenuBar {
     contents += new Menu("File") {
       contents += new MenuItem(Action("Start a New Game") {
         GameSelectionDialog.showDifficultySelectionDialog((gameId, difficulty, map, gameSequence) => {
-          screenManager.switchScreen(new GameScreen(screenManager, gameId, difficulty, map, gameSequence))
+          screenManager.switchScreen(new GameScreen(screenManager, gameId, difficulty, map, gameSequence, 0))
           close()
         })
       })
 
       contents += new MenuItem(Action("Save Game") {
-        val (gameId, _, map, gameSequence) = gameController.getGameData
-        LoadGameAction.saveGame(gameId, map, gameSequence) {
+        val (gameId, _, map, gameSequence, elapsedTime) = gameController.pauseTime().getGameData
+        LoadGameAction.saveGame(gameId, map, gameSequence, elapsedTime) {
           Dialog.showMessage(null, "Game Successfully saved", title = "Success")
         }
       })
 
       contents += new MenuItem(Action("Save Game and Go to Main Menu") {
-        val (gameId, _, map, gameSequence) = gameController.getGameData
-        LoadGameAction.saveGame(gameId, map, gameSequence) {
+        val (gameId, _, map, gameSequence, elapsedTime) = gameController.pauseTime().getGameData
+        LoadGameAction.saveGame(gameId, map, gameSequence, elapsedTime) {
           Dialog.showMessage(null, "Game Successfully saved", title = "Success")
           screenManager.switchScreen(new MainMenuScreen(screenManager))
         }
       })
 
       contents += new MenuItem(Action("Go to Main Menu") {
+        timer.stop()
         screenManager.switchScreen(new MainMenuScreen(screenManager))
       })
     }
@@ -63,6 +85,10 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
   contents = new BorderPanel {
     layout(controlPanel) = BorderPanel.Position.North
     layout(gridPanel) = BorderPanel.Position.Center
+  }
+
+  private def updateElapsedTime(): Unit = {
+    drawStatsPanel(gameController)
   }
 
   override protected def handleCellClicked(row: Int, col: Int): Unit = {
@@ -79,7 +105,7 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
     controlPanel.contents.clear()
     controlPanel.contents += new Label("Bombs: " + boardManager.totalBombs)
     controlPanel.contents += new Label("Flags: " + boardManager.totalFlags)
-    controlPanel.contents += new Label("Time: 0") // TODO: Show actual time
+    controlPanel.contents += new Label(s"Time: ${gameController.getElapsedTime}") // Show elapsed time
 
     controlPanel.contents += new Button("Hint") {
       reactions += {

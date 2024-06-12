@@ -20,21 +20,21 @@ object LoadGameAction {
     callback(mapFiles)
   }
 
-  def loadGame(folder: String, gameName: String)(callback: (GameMap, GameSequence) => Unit): Unit = {
+  def loadGame(folder: String, gameName: String)(callback: (GameMap, GameSequence, Int) => Unit): Unit = {
     val mapFilePath = Paths.get(mapsPath, folder, s"$gameName.txt").toString
-    val (map, gameSequence) = FileHelper.loadFile(mapFilePath)
-    callback(map, gameSequence)
+    val (map, gameSequence, elapsedTime) = FileHelper.loadFile(mapFilePath)
+    callback(map, gameSequence, elapsedTime)
   }
 
-  def saveFile(fileType: String)(gameId: String, map: GameMap, gameSequence: GameSequence)(callback: => Unit): Try[Unit] = {
+  private def saveFile(fileType: String)(gameId: String, map: GameMap, gameSequence: GameSequence, elapsedTime: Int)(callback: => Unit): Try[Unit] = {
     Try {
       val gamePath = Paths.get(mapsPath, fileType, s"$gameId").toString
-      FileHelper.saveFile(gamePath)(map, gameSequence)
+      FileHelper.saveFile(gamePath)(map, gameSequence, elapsedTime)
       callback
     }
   }
 
-  def saveGame: (String, GameMap, GameSequence) => Unit => Try[Unit] = saveFile("Games")
+  def saveGame: (String, GameMap, GameSequence, Int) => Unit => Try[Unit] = saveFile("Games")
 
-  def saveNewMap(mapName: String, difficulty: String, map: GameMap): Unit => Try[Unit] = saveFile(difficulty)(mapName, map, Array.empty)
+  def saveNewMap(mapName: String, difficulty: String, map: GameMap): Unit => Try[Unit] = saveFile(difficulty)(mapName, map, Array.empty, 0)
 }

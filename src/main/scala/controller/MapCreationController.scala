@@ -192,8 +192,8 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
 
   def getMapDifficulty: MapDifficulty = MapDifficulty.fromName(difficulty)
 
-  override def getGameData: (String, String, GameMap, GameSequence) = {
-    (mapName, difficulty, map, Array.empty)
+  override def getGameData: (String, String, GameMap, GameSequence, Int) = {
+    (mapName, difficulty, map, Array.empty, 0)
   }
 
   def getMap: GameMap = map

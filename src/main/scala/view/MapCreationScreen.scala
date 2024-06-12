@@ -55,7 +55,7 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
   menuBar = new MenuBar {
     contents += new Menu("File") {
       contents += new MenuItem(Action("Save Map") {
-        val (mapName, difficulty, map, gameSequence) = mapCreationController.getGameData
+        val (mapName, difficulty, map, gameSequence, _) = mapCreationController.getGameData
         LoadGameAction.saveNewMap(mapName, difficulty, map) {
           if (mapCreationController.isMapValid) {
             Dialog.showMessage(null, "New map created", title = "Success")

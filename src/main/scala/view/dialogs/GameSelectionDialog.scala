@@ -43,16 +43,16 @@ object GameSelectionDialog {
         val selectedDifficulty = difficultyComboBox.selection.item
         refreshMapList(selectedDifficulty)
     }
-    
+
     val frame = new MainFrame()
     frame.visible = true
-    
+
     randomMapButton.reactions += {
       case scala.swing.event.ButtonClicked(_) =>
         if (mapList.listData.nonEmpty) {
           val randomMap = mapList.listData(scala.util.Random.nextInt(mapList.listData.size))
           val selectedDifficulty = difficultyComboBox.selection.item
-          LoadGameAction.loadGame(selectedDifficulty, randomMap) { (map, gameSequence) =>
+          LoadGameAction.loadGame(selectedDifficulty, randomMap) { (map, gameSequence, _) =>
             callback(GameHelper.generateUniqueFilename(), selectedDifficulty, map, gameSequence)
             frame.close()
           }
@@ -60,7 +60,7 @@ object GameSelectionDialog {
           Dialog.showMessage(null, "No maps available to select randomly.", title = "Error")
         }
     }
-    
+
     val result = Dialog.showConfirmation(
       frame,
       panel.peer,
@@ -73,7 +73,7 @@ object GameSelectionDialog {
       val selectedMapOption = mapList.selection.items.headOption
       val selectedMap = selectedMapOption.getOrElse("")
       if (selectedMap.nonEmpty) {
-        LoadGameAction.loadGame(selectedDifficulty, selectedMap)((map, gameSequence) => {
+        LoadGameAction.loadGame(selectedDifficulty, selectedMap)((map, gameSequence, _) => {
           callback(GameHelper.generateUniqueFilename(), selectedDifficulty, map, gameSequence)
           frame.close()
         })
@@ -83,7 +83,7 @@ object GameSelectionDialog {
     }
   }
 
-  def showGameSelectionDialog(callback: (String, GameMap, GameSequence) => Unit): Unit = {
+  def showGameSelectionDialog(callback: (String, GameMap, GameSequence, Int) => Unit): Unit = {
     val mapList = new ListView(Seq.empty[String])
     mapList.selection.intervalMode = ListView.IntervalMode.Single
     mapList.peer.setVisibleRowCount(5)
@@ -103,13 +103,13 @@ object GameSelectionDialog {
 
     val frame = new MainFrame()
     frame.visible = true
-    
+
     randomMapButton.reactions += {
       case scala.swing.event.ButtonClicked(_) =>
         if (mapList.listData.nonEmpty) {
           val randomMap = mapList.listData(scala.util.Random.nextInt(mapList.listData.size))
-          LoadGameAction.loadGame("Games", randomMap) { (map, gameSequence) =>
-            callback(randomMap, map, gameSequence)
+          LoadGameAction.loadGame("Games", randomMap) { (map, gameSequence, elapsedTime) =>
+            callback(randomMap, map, gameSequence, elapsedTime)
             frame.close()
           }
         } else {
@@ -117,7 +117,6 @@ object GameSelectionDialog {
         }
     }
 
-    
 
     val result = Dialog.showConfirmation(
       frame,
@@ -130,8 +129,8 @@ object GameSelectionDialog {
       val selectedMapOption = mapList.selection.items.headOption
       val gameId = selectedMapOption.getOrElse("")
       if (gameId.nonEmpty) {
-        LoadGameAction.loadGame("Games", gameId)((map, gameSequence) => {
-          callback(gameId, map, gameSequence)
+        LoadGameAction.loadGame("Games", gameId)((map, gameSequence, elapsedTime) => {
+          callback(gameId, map, gameSequence, elapsedTime)
           frame.close()
         })
       } else {
@@ -191,7 +190,7 @@ object GameSelectionDialog {
       val selectedMap = selectedMapOption.getOrElse("")
       val newMapName = mapNameField.text.trim
       if (selectedMap.nonEmpty && newMapName.nonEmpty) {
-        LoadGameAction.loadGame(selectedDifficulty, selectedMap)((map, gameSequence) => {
+        LoadGameAction.loadGame(selectedDifficulty, selectedMap)((map, gameSequence, _) => {
           callback(s"$newMapName.txt", selectedDifficulty, map)
           frame.close()
         })

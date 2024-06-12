@@ -31,7 +31,7 @@ object FileHelper {
     })
   }
 
-  def saveFile(filePath: String)(map: GameMap, gameSequence: GameSequence): Try[Unit] = {
+  def saveFile(filePath: String)(map: GameMap, gameSequence: GameSequence, elapsedTime: Int): Try[Unit] = {
     Using(new BufferedWriter(new FileWriter(filePath))) { writer =>
       map.foreach(row => writer.write(row.mkString("") + "\n"))
       gameSequence.foreach { case (action, row, col) =>
@@ -42,15 +42,19 @@ object FileHelper {
         }
         writer.write(s"$actionString,$row,$col\n")
       }
+      writer.write(s"Time,$elapsedTime\n")
     }
   }
 
-  def loadFile(filePath: String): (GameMap, GameSequence) = {
+  def loadFile(filePath: String): (GameMap, GameSequence, Int) = {
     val lines = readFileLines(filePath)
-    val mapLines = lines.takeWhile(line => !line.startsWith("L") && !line.startsWith("R"))
+    val mapLines = lines.takeWhile(line => !line.startsWith("L") && !line.startsWith("R") && !line.startsWith("H") && !line.startsWith("Time"))
     val map = loadMap(mapLines)
-    val gameSequence: GameSequence = loadGameActions(lines.drop(mapLines.length))
+    val actionLines = lines.drop(mapLines.length).takeWhile(!_.startsWith("Time"))
+    val gameSequence: GameSequence = loadGameActions(actionLines)
+    val timeLine = lines.find(_.startsWith("Time")).getOrElse("Time,0")
+    val elapsedTime = timeLine.split(",")(1).toInt
 
-    (map, gameSequence)
+    (map, gameSequence, elapsedTime)
   }
 }

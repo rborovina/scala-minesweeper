@@ -42,12 +42,12 @@ class MainMenuScreen(screenManager: ScreenManager) extends MainFrame {
   reactions += {
     case ButtonClicked(`newGameButton`) =>
       GameSelectionDialog.showDifficultySelectionDialog((gameId, difficulty, map, gameSequence) => {
-        screenManager.switchScreen(new GameScreen(screenManager, gameId, difficulty, map, gameSequence))
+        screenManager.switchScreen(new GameScreen(screenManager, gameId, difficulty, map, gameSequence, 0))
         close()
       })
     case ButtonClicked(`loadGameButton`) =>
-      GameSelectionDialog.showGameSelectionDialog((gameId, map, gameSequence) => {
-        screenManager.switchScreen(new GameScreen(screenManager, gameId, "", map, gameSequence))
+      GameSelectionDialog.showGameSelectionDialog((gameId, map, gameSequence, elapsedTime) => {
+        screenManager.switchScreen(new GameScreen(screenManager, gameId, "", map, gameSequence, elapsedTime))
         close()
       })
     case ButtonClicked(`createLevelButton`) =>

@@ -11,7 +11,7 @@ import scala.collection.immutable.Queue
 import scala.collection.immutable.Set
 import scala.reflect.ClassTag
 
-class GameController(gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence = Array.empty, onGameOver: () => Unit, onGameWon: () => Unit) extends BoardManager {
+class GameController(gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence = Array.empty, elapsedTime: Int = 0, onGameOver: () => Unit, onGameWon: () => Unit) extends BoardManager {
 
   override val rows: Int = map.length
   override val columns: Int = map(0).length
@@ -193,13 +193,23 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
 
   def getMapDifficulty: MapDifficulty = MapDifficulty.fromName(difficulty)
 
-  private def copy(gameSequence: GameSequence): GameController = {
-    new GameController(gameId, difficulty, map, gameSequence, onGameOver, onGameWon)
+  private var startTime: Long = System.currentTimeMillis()
+
+  def getElapsedTime: Int = {
+    elapsedTime + ((System.currentTimeMillis() - startTime) / 1000).toInt
   }
 
-  override def getGameData: (String, String, GameMap, GameSequence) = {
-    (gameId, difficulty, map, gameSequence)
+  def pauseTime(): GameController = {
+    val currentElapsedTime = getElapsedTime
+    new GameController(gameId, difficulty, map, gameSequence, currentElapsedTime, onGameOver, onGameWon)
   }
+
+  def resumeTime(): GameController = {
+    val newController = copy()
+    newController.startTime = System.currentTimeMillis()
+    newController
+  }
+
 
   def provideHint(): GameController = {
     val safeCells = for {
@@ -217,4 +227,11 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
     }
   }
 
+  private def copy(gameSequence: GameSequence = gameSequence, elapsedTime: Int = getElapsedTime): GameController = {
+    new GameController(gameId, difficulty, map, gameSequence, elapsedTime, onGameOver, onGameWon)
+  }
+
+  override def getGameData: (String, String, GameMap, GameSequence, Int) = {
+    (gameId, difficulty, map, gameSequence, getElapsedTime)
+  }
 }

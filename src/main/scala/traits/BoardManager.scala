@@ -15,5 +15,5 @@ trait BoardManager {
 
   def getMapDifficulty: MapDifficulty
   
-  def getGameData: (String, String, GameMap, GameSequence)
+  def getGameData: (String, String, GameMap, GameSequence, Int)
 }
