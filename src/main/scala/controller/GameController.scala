@@ -2,6 +2,7 @@ package controller
 
 import actions.UserAction
 import actions.UserAction.{Hint, LeftClick, RightClick}
+import helpers.FileHelper
 import model.{BombCell, Cell, EmptyCell}
 import traits.{BoardManager, MapDifficulty}
 import types.{Board, GameMap, GameSequence}
@@ -10,6 +11,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import scala.collection.immutable.Set
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 class GameController(gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence = Array.empty, elapsedTime: Int = 0, onGameOver: () => Unit, onGameWon: () => Unit) extends BoardManager {
 
@@ -144,6 +146,7 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
         onGameOver()
         revealAllCells(board)
       case _ if isGameCompleted(board) =>
+        logGameCompletion()
         onGameWon()
         revealAllCells(board)
       case _ => revealNeighboringCells(board, row, col)
@@ -220,10 +223,20 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
 
     if (safeCells.nonEmpty) {
       val (hintRow, hintCol) = safeCells(scala.util.Random.nextInt(safeCells.length))
-
       copy(gameSequence :+ (UserAction.Hint, hintRow, hintCol))
     } else {
       this
+    }
+  }
+
+  def getHintsCount: Int = gameSequence.count(_._1 == UserAction.Hint)
+
+  private def logGameCompletion(): Unit = {
+    val (gameId, difficulty, map, gameSequence, elapsedTime) = getGameData
+
+    FileHelper.logCompletedGame(gameId, totalBombs, getHintsCount, rows, columns, elapsedTime) match {
+      case Success(_) => println(s"Game $gameId logged successfully.")
+      case Failure(ex) => println(s"Failed to log game $gameId: ${ex.getMessage}")
     }
   }
 

@@ -57,4 +57,10 @@ object FileHelper {
 
     (map, gameSequence, elapsedTime)
   }
+
+  def logCompletedGame(gameName: String, bombs: Int, hints: Int, rows: Int, cols: Int, time: Int): Try[Unit] = {
+    Using(new BufferedWriter(new FileWriter("completed_games_log.txt", true))) { writer =>
+      writer.write(s"Game Name: $gameName, Bombs: $bombs, Hints: $hints, Rows: $rows, Cols: $cols, Time: $time\n")
+    }
+  }
 }
