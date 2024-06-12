@@ -13,5 +13,7 @@ trait BoardManager {
 
   def onCellRightClicked(row: Int, col: Int): BoardManager
 
+  def getMapDifficulty: MapDifficulty
+  
   def getGameData: (String, String, GameMap, GameSequence)
 }

@@ -3,13 +3,14 @@ package view
 import actions.LoadGameAction
 import controller.MapCreationController
 import model.BombCell
-import traits.{BoardManager, ScreenManager}
+import traits.{BoardManager, MapDifficulty, ScreenManager}
 import types.GameMap
 
 import java.nio.file.Paths
 import javax.swing.ImageIcon
+import scala.swing.Swing.EmptyBorder
 import scala.swing.event.ButtonClicked
-import scala.swing.{Action, BorderPanel, BoxPanel, Button, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem}
+import scala.swing.{Action, BorderPanel, BoxPanel, Button, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem, Orientation}
 
 class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficulty: String, map: GameMap) extends BaseGridScreen(screenManager) {
 
@@ -25,9 +26,13 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
       contents += new MenuItem(Action("Save Map") {
         val (mapName, difficulty, map, gameSequence) = mapCreationController.getGameData
         LoadGameAction.saveNewMap(mapName, difficulty, map) {
-          Dialog.showMessage(null, "New map created", title = "Success")
-          screenManager.switchScreen(new MainMenuScreen(screenManager))
-          close()
+          if (mapCreationController.isMapValid) {
+            Dialog.showMessage(null, "New map created", title = "Success")
+            screenManager.switchScreen(new MainMenuScreen(screenManager))
+            close()
+          } else {
+            Dialog.showMessage(null, s"Map is not valid for difficulty level $difficulty", title = "Error")
+          }
         }
       })
 
@@ -40,41 +45,78 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
   contents = new BorderPanel {
     layout(controlPanel) = BorderPanel.Position.North
 
-    layout(new BorderPanel {
-      layout(new Button("+") {
-        reactions += {
-          case ButtonClicked(_) => updateGrid(mapCreationController.addColumnBefore)
-        }
-      }) = BorderPanel.Position.Center
+    layout(new BoxPanel(Orientation.Vertical) {
+      contents += new BorderPanel {
+        layout(new Button("+") {
+          reactions += {
+            case ButtonClicked(_) => updateGrid(mapCreationController.addColumnBefore)
+          }
+        }) = BorderPanel.Position.Center
+      }
+      contents += new BorderPanel {
+        layout(new Button("–") {
+          reactions += {
+            case ButtonClicked(_) => updateGrid(mapCreationController.removeFirstColumn)
+          }
+        }) = BorderPanel.Position.Center
+      }
     }) = BorderPanel.Position.West
 
     layout(new BorderPanel {
-      layout(new BorderPanel {
-        layout(new Button("+") {
-          reactions += {
-            case ButtonClicked(_) => updateGrid(mapCreationController.addRowBefore)
-          }
-        }) = BorderPanel.Position.Center
+
+      layout(new BoxPanel(Orientation.Horizontal) {
+        contents += new BorderPanel {
+          layout(new Button("+") {
+            reactions += {
+              case ButtonClicked(_) => updateGrid(mapCreationController.addRowBefore)
+            }
+          }) = BorderPanel.Position.Center
+        }
+        contents += new BorderPanel {
+          layout(new Button("–") {
+            reactions += {
+              case ButtonClicked(_) => updateGrid(mapCreationController.removeFirstRow)
+            }
+          }) = BorderPanel.Position.Center
+        }
       }) = BorderPanel.Position.North
 
       layout(gridPanel) = BorderPanel.Position.Center
 
-      layout(new BorderPanel {
-        layout(new Button("+") {
-          reactions += {
-            case ButtonClicked(_) => updateGrid(mapCreationController.addRowAfter)
-          }
-        }) = BorderPanel.Position.Center
+      layout(new BoxPanel(Orientation.Horizontal) {
+        contents += new BorderPanel {
+          layout(new Button("+") {
+            reactions += {
+              case ButtonClicked(_) => updateGrid(mapCreationController.addRowAfter)
+            }
+          }) = BorderPanel.Position.Center
+        }
+        contents += new BorderPanel {
+          layout(new Button("–") {
+            reactions += {
+              case ButtonClicked(_) => updateGrid(mapCreationController.removeLastRow)
+            }
+          }) = BorderPanel.Position.Center
+        }
       }) = BorderPanel.Position.South
 
     }) = BorderPanel.Position.Center
 
-    layout(new BorderPanel {
-      layout(new Button("+") {
-        reactions += {
-          case ButtonClicked(_) => updateGrid(mapCreationController.addColumnAfter)
-        }
-      }) = BorderPanel.Position.Center
+    layout(new BoxPanel(Orientation.Vertical) {
+      contents += new BorderPanel {
+        layout(new Button("+") {
+          reactions += {
+            case ButtonClicked(_) => updateGrid(mapCreationController.addColumnAfter)
+          }
+        }) = BorderPanel.Position.Center
+      }
+      contents += new BorderPanel {
+        layout(new Button("–") {
+          reactions += {
+            case ButtonClicked(_) => updateGrid(mapCreationController.removeLastColumn)
+          }
+        }) = BorderPanel.Position.Center
+      }
     }) = BorderPanel.Position.East
 
   }
@@ -92,18 +134,14 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
   }
 
   override protected def drawStatsPanel(boardManager: BoardManager): Unit = {
+    val mapDifficulty: MapDifficulty = boardManager.getMapDifficulty
+
     controlPanel.contents.clear()
-    controlPanel.contents += new Label("Bombs: " + boardManager.totalBombs)
-    controlPanel.contents += new Button("Add Row Before") {
-      reactions += {
-        case ButtonClicked(_) =>
-      }
-    }
-    controlPanel.contents += new Button("Add Row After") {
-      reactions += {
-        case ButtonClicked(_) =>
-      }
-    }
+    controlPanel.contents += new Label(s"Bombs: ${boardManager.totalBombs} (Min: ${mapDifficulty.bombsRange._1} Max: ${mapDifficulty.bombsRange._2})")
+    controlPanel.contents += new Label(s"Rows: ${boardManager.rows} (Min: ${mapDifficulty.rowsRange._1} Max: ${mapDifficulty.rowsRange._2})")
+    controlPanel.contents += new Label(s"Columns: ${boardManager.columns} (Min: ${mapDifficulty.columnsRange._1} Max: ${mapDifficulty.columnsRange._2})")
+
+    controlPanel.border = EmptyBorder(10, 10, 10, 10)
 
     controlPanel.revalidate()
     controlPanel.repaint()

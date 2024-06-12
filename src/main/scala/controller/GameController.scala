@@ -3,7 +3,7 @@ package controller
 import actions.UserAction
 import actions.UserAction.{LeftClick, RightClick}
 import model.{BombCell, Cell, EmptyCell}
-import traits.BoardManager
+import traits.{BoardManager, MapDifficulty}
 import types.{Board, GameMap, GameSequence}
 
 import scala.annotation.tailrec
@@ -189,11 +189,13 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
   private def revealAllCells(board: Board): Board = {
     board.map(_.map(cell => cell.reveal()))
   }
+  
+  def getMapDifficulty: MapDifficulty = MapDifficulty.fromName(difficulty)
 
   private def copy(gameSequence: GameSequence): GameController = {
     new GameController(gameId, difficulty, map, gameSequence, onGameOver, onGameWon)
   }
-
+  
   override def getGameData: (String, String, GameMap, GameSequence) = {
     (gameId, difficulty, map, gameSequence)
   }

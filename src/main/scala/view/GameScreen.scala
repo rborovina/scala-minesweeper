@@ -40,13 +40,21 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
       })
 
       contents += new MenuItem(Action("Save Game") {
+        val (gameId, _, map, gameSequence) = gameController.getGameData
         LoadGameAction.saveGame(gameId, map, gameSequence) {
           Dialog.showMessage(null, "Game Successfully saved", title = "Success")
         }
       })
 
-      contents += new MenuItem(Action("Go to Main Menu") {
+      contents += new MenuItem(Action("Save Game and Go to Main Menu") {
         val (gameId, _, map, gameSequence) = gameController.getGameData
+        LoadGameAction.saveGame(gameId, map, gameSequence) {
+          Dialog.showMessage(null, "Game Successfully saved", title = "Success")
+          screenManager.switchScreen(new MainMenuScreen(screenManager))
+        }
+      })
+
+      contents += new MenuItem(Action("Go to Main Menu") {
         screenManager.switchScreen(new MainMenuScreen(screenManager))
       })
     }
