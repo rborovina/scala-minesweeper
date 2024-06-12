@@ -9,9 +9,10 @@ import types.GameMap
 
 import java.nio.file.Paths
 import javax.swing.ImageIcon
+import scala.collection.mutable
 import scala.swing.Swing.EmptyBorder
 import scala.swing.event.{ButtonClicked, MouseClicked}
-import scala.swing.{Action, BorderPanel, BoxPanel, Button, CheckBox, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem, Orientation, TextField, Swing}
+import scala.swing._
 
 class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficulty: String, map: GameMap) extends BaseGridScreen(screenManager) {
 
@@ -22,6 +23,19 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
   private val numRowsField: TextField = new TextField { columns = 3 }
   private val numColsField: TextField = new TextField { columns = 3 }
   private val transparentCheck: CheckBox = new CheckBox("Transparent")
+
+  private val availableOperations = Seq(
+    "Rotate Left" -> mapCreationController.rotate90DegreesCounterClockwise,
+    "Rotate Right" -> mapCreationController.rotate90DegreesClockwise,
+    "Reflect Horizontally" -> mapCreationController.reflectHorizontally,
+    "Reflect Vertically" -> mapCreationController.reflectVertically,
+    "Reflect Diagonally" -> mapCreationController.reflectDiagonally
+  )
+
+  private val selectedOperations: mutable.Buffer[(String, Transformation[GameMap])] = mutable.Buffer()
+
+  private val availableOperationsList = new ListView(availableOperations.map(_._1))
+  private val selectedOperationsList = new ListView(selectedOperations.map(_._1))
 
   override protected val controlPanel: GridPanel = new GridPanel(3, 3)
   override protected val gridPanel: GridPanel = new GridPanel(mapCreationController.rows, mapCreationController.columns)
@@ -127,21 +141,65 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
     }) = BorderPanel.Position.East
 
     // Adding submap selection fields and buttons in a single row with border
-    layout(new BoxPanel(Orientation.Horizontal) {
-      contents += new Label("Start Row:")
-      contents += startRowField
-      contents += Swing.HStrut(10)
-      contents += new Label("Start Column:")
-      contents += startColField
-      contents += Swing.HStrut(10)
-      contents += new Label("Number of Rows:")
-      contents += numRowsField
-      contents += Swing.HStrut(10)
-      contents += new Label("Number of Columns:")
-      contents += numColsField
-      contents += Swing.HStrut(10)
-      contents += transparentCheck
-      contents += Swing.HStrut(10)
+    layout(new BoxPanel(Orientation.Vertical) {
+      contents += new BoxPanel(Orientation.Horizontal) {
+        contents += new Label("Start Row:")
+        contents += startRowField
+        contents += Swing.HStrut(10)
+        contents += new Label("Start Column:")
+        contents += startColField
+        contents += Swing.HStrut(10)
+        contents += new Label("Number of Rows:")
+        contents += numRowsField
+        contents += Swing.HStrut(10)
+        contents += new Label("Number of Columns:")
+        contents += numColsField
+        contents += Swing.HStrut(10)
+        contents += transparentCheck
+        contents += Swing.HStrut(10)
+        border = Swing.EmptyBorder(10, 10, 10, 10)
+      }
+
+      contents += new BoxPanel(Orientation.Horizontal) {
+        contents += new Label("Available Operations")
+        contents += Swing.HStrut(10)
+        contents += new Label("Selected Operations")
+        border = Swing.EmptyBorder(10, 10, 10, 10)
+      }
+
+      contents += new BoxPanel(Orientation.Horizontal) {
+        contents += new ScrollPane(availableOperationsList) {
+          preferredSize = new Dimension(200, 100)
+        }
+        contents += new BoxPanel(Orientation.Vertical) {
+          contents += new Button("Add >>") {
+            reactions += {
+              case ButtonClicked(_) =>
+                val selectedIndex = availableOperationsList.selection.leadIndex
+                if (selectedIndex >= 0) {
+                  val selectedOperation = availableOperations(selectedIndex)
+                  selectedOperations += selectedOperation
+                  updateSelectedOperationsList()
+                }
+            }
+          }
+          contents += new Button("<< Remove") {
+            reactions += {
+              case ButtonClicked(_) =>
+                val selectedIndex = selectedOperationsList.selection.leadIndex
+                if (selectedIndex >= 0) {
+                  selectedOperations.remove(selectedIndex)
+                  updateSelectedOperationsList()
+                }
+            }
+          }
+        }
+        contents += new ScrollPane(selectedOperationsList) {
+          preferredSize = new Dimension(200, 100)
+        }
+        border = Swing.EmptyBorder(10, 10, 10, 10)
+      }
+
       contents += new Button("Apply Transformation") {
         reactions += {
           case ButtonClicked(_) =>
@@ -152,13 +210,18 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
             val transparent = transparentCheck.selected
 
             val submap = mapCreationController.selectSubmap(startRow, startCol, numRows, numCols)
-            val transformedSubmap = mapCreationController.rotate90DegreesClockwise.trans(submap)
+            val transformedSubmap = selectedOperations.foldLeft(submap) { (currentMap, operation) =>
+              operation._2.trans(currentMap)
+            }
             mapCreationController = mapCreationController.mergeSubmap(startRow, startCol, transformedSubmap, transparent)
             drawScreen(mapCreationController)
         }
       }
-      border = Swing.EmptyBorder(10, 10, 10, 10)
     }) = BorderPanel.Position.South
+  }
+
+  private def updateSelectedOperationsList(): Unit = {
+    selectedOperationsList.listData = selectedOperations.map(_._1)
   }
 
   override protected def handleCellClicked(row: Int, col: Int): Unit = {
