@@ -48,27 +48,60 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     map.slice(startRow, startRow + subRows).map(_.slice(startCol, startCol + subCols))
   }
 
-  def mergeSubmap(
-                   startRow: Int,
-                   startCol: Int,
-                   submap: GameMap,
-                   transparent: Boolean
-                 ): MapCreationController = {
-    val updatedMap = map.zipWithIndex.map { case (row, rowIndex) =>
-      row.zipWithIndex.map { case (cell, colIndex) =>
-        if (rowIndex >= startRow && rowIndex < startRow + submap.length &&
-          colIndex >= startCol && colIndex < startCol + submap(0).length) {
-          val newRow = rowIndex - startRow
-          val newCol = colIndex - startCol
-          if (transparent && cell == '#') '#' else submap(newRow)(newCol)
-        } else {
-          cell
+  def expandMap(finalRows: Int, finalCols: Int, startRow: Int, startCol: Int): Transformation[GameMap] = {
+    Transformation(
+      trans = { existingMap =>
+        Array.tabulate(finalRows, finalCols) { (r, c) =>
+          if (r >= startRow && r < startRow + existingMap.length && c >= startCol && c < startCol + existingMap(0).length)
+            existingMap(r - startRow)(c - startCol)
+          else '-'
         }
+      },
+      inv = { expandedMap =>
+        expandedMap
       }
-    }
-    copy(updatedMap)
+    )
   }
-  
+
+
+  def mergeMaps(map: GameMap)(startRow: Int, startCol: Int, transparent: Boolean): Transformation[GameMap] = {
+    Transformation(
+      trans = { submap =>
+        map.zipWithIndex.map { case (row, rowIndex) =>
+          row.zipWithIndex.map { case (cell, colIndex) =>
+            if (rowIndex >= startRow && rowIndex < startRow + submap.length &&
+              colIndex >= startCol && colIndex < startCol + submap(0).length) {
+              val newRow = rowIndex - startRow
+              val newCol = colIndex - startCol
+              if (transparent && cell == '#') '#' else submap(newRow)(newCol)
+            } else {
+              cell
+            }
+          }
+        }
+      },
+      inv = { _ =>
+        map
+      }
+    )
+  }
+
+
+  def mergeTransparently(originalMap: GameMap): Transformation[GameMap] = {
+    Transformation(
+      trans = { transformedSubmap =>
+        transformedSubmap.zipWithIndex.map { case (row, r) =>
+          row.zipWithIndex.map { case (cell, c) =>
+            if (originalMap(r)(c) == '#') '#' else cell
+          }
+        }
+      },
+      inv = { transformedSubmap =>
+        transformedSubmap
+      }
+    )
+  }
+
   private def countTotalBombs(board: Board): Int = {
     board.flatten.count {
       case BombCell(_, _) => true
@@ -116,14 +149,18 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     copy(map = f(map))
   }
 
-  private def applyTransformations(transformations: Transformation[GameMap]): GameMap = {
-    transformations(map)
+  private def applyTransformations(map: GameMap)(transformations: Array[Transformation[GameMap]]): GameMap = {
+    transformations.foldLeft(map) { (currentMap, transformation) =>
+      transformation.trans(currentMap)
+    }
   }
 
-  def updateMapWithTransformations(transformations: Transformation[GameMap]): MapCreationController = {
-    val newMap = applyTransformations(transformations)
+  def updateWithTransformations(map: GameMap)(transformations: Array[Transformation[GameMap]]): MapCreationController = {
+    val newMap = applyTransformations(map)(transformations)
     copy(map = newMap)
   }
+
+  def updateMapWithTransformations(transformations: Array[Transformation[GameMap]]): MapCreationController = updateWithTransformations(map)(transformations)
 
   def isMapValid: Boolean = {
     val currentDifficulty = MapDifficulty.fromName(difficulty)
@@ -139,29 +176,27 @@ class MapCreationController(mapName: String, difficulty: String, map: GameMap)
     validRows && validCols && validBombs
   }
 
-  def clearArea(startRow: Int, startCol: Int, width: Int, height: Int): MapCreationController = {
-    @tailrec
-    def clear(rows: GameMap, rowIndex: Int = 0): GameMap = {
-      if (rowIndex >= rows.length) rows
-      else {
-        val updatedRow = rows(rowIndex).zipWithIndex.map { case (cell, colIndex) =>
-          if (rowIndex >= startRow && rowIndex < startRow + height &&
-            colIndex >= startCol && colIndex < startCol + width &&
-            cell == '#') '-' else cell
-        }
-        clear(rows.updated(rowIndex, updatedRow), rowIndex + 1)
+  def clearMap: Transformation[GameMap] = {
+    Transformation(
+      trans = { existingMap =>
+        val rows = existingMap.length
+        val cols = if (existingMap.isEmpty) 0 else existingMap(0).length
+        Array.fill(rows, cols)('-')
+      },
+      inv = { existingMap =>
+        existingMap
       }
-    }
-
-    val updatedMap = clear(map)
-    copy(updatedMap)
+    )
   }
+
 
   def getMapDifficulty: MapDifficulty = MapDifficulty.fromName(difficulty)
 
   override def getGameData: (String, String, GameMap, GameSequence) = {
     (mapName, difficulty, map, Array.empty)
   }
+
+  def getMap: GameMap = map
 
   private def copy(map: GameMap): MapCreationController = {
     new MapCreationController(mapName, difficulty, map)

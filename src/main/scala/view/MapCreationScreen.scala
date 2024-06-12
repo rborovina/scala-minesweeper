@@ -18,10 +18,18 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
 
   private var mapCreationController: MapCreationController = MapCreationController(mapName, difficulty, map)
 
-  private val startRowField: TextField = new TextField { columns = 3 }
-  private val startColField: TextField = new TextField { columns = 3 }
-  private val numRowsField: TextField = new TextField { columns = 3 }
-  private val numColsField: TextField = new TextField { columns = 3 }
+  private val startRowField: TextField = new TextField {
+    columns = 3
+  }
+  private val startColField: TextField = new TextField {
+    columns = 3
+  }
+  private val numRowsField: TextField = new TextField {
+    columns = 3
+  }
+  private val numColsField: TextField = new TextField {
+    columns = 3
+  }
   private val transparentCheck: CheckBox = new CheckBox("Transparent")
 
   private val availableOperations = Seq(
@@ -29,10 +37,12 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
     "Rotate Right" -> mapCreationController.rotate90DegreesClockwise,
     "Reflect Horizontally" -> mapCreationController.reflectHorizontally,
     "Reflect Vertically" -> mapCreationController.reflectVertically,
-    "Reflect Diagonally" -> mapCreationController.reflectDiagonally
+    "Reflect Diagonally" -> mapCreationController.reflectDiagonally,
+    "Clear Map" -> mapCreationController.clearMap
   )
 
   private val selectedOperations: mutable.Buffer[(String, Transformation[GameMap])] = mutable.Buffer()
+
 
   private val availableOperationsList = new ListView(availableOperations.map(_._1))
   private val selectedOperationsList = new ListView(selectedOperations.map(_._1))
@@ -140,7 +150,6 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
       }
     }) = BorderPanel.Position.East
 
-    // Adding submap selection fields and buttons in a single row with border
     layout(new BoxPanel(Orientation.Vertical) {
       contents += new BoxPanel(Orientation.Horizontal) {
         contents += new Label("Start Row:")
@@ -202,22 +211,27 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
 
       contents += new Button("Apply Transformation") {
         reactions += {
-          case ButtonClicked(_) =>
-            val startRow = startRowField.text.toInt
-            val startCol = startColField.text.toInt
-            val numRows = numRowsField.text.toInt
-            val numCols = numColsField.text.toInt
-            val transparent = transparentCheck.selected
-
-            val submap = mapCreationController.selectSubmap(startRow, startCol, numRows, numCols)
-            val transformedSubmap = selectedOperations.foldLeft(submap) { (currentMap, operation) =>
-              operation._2.trans(currentMap)
-            }
-            mapCreationController = mapCreationController.mergeSubmap(startRow, startCol, transformedSubmap, transparent)
-            drawScreen(mapCreationController)
+          case ButtonClicked(_) => applyTransformation()
         }
       }
     }) = BorderPanel.Position.South
+  }
+
+  private def applyTransformation(): Unit = {
+    val startRow = startRowField.text.toInt
+    val startCol = startColField.text.toInt
+    val numRows = numRowsField.text.toInt
+    val numCols = numColsField.text.toInt
+    val transparent = transparentCheck.selected
+
+    val submap = mapCreationController.selectSubmap(startRow, startCol, numRows, numCols)
+
+    selectedOperations += (("Merge Maps", mapCreationController.mergeMaps(mapCreationController.getMap)(startRow, startCol, transparent)))
+
+    val transformations: Array[Transformation[GameMap]] = selectedOperations.map(_._2).toArray
+
+    mapCreationController = mapCreationController.updateWithTransformations(submap)(transformations)
+    drawScreen(mapCreationController)
   }
 
   private def updateSelectedOperationsList(): Unit = {
@@ -289,7 +303,9 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
 
     gridPanel.contents ++= (
       for ((row, rowIndex) <- boardManager.board.zipWithIndex; (cell, colIndex) <- row.iterator.zipWithIndex) yield new Button {
-        icon = cell match {
+        icon
+
+        = cell match {
           case BombCell(_, _) => new ImageIcon(new ImageIcon(Paths.get(assetsPath, "mine.png").toString)
             .getImage.getScaledInstance(32, 32, java.awt.Image.SCALE_DEFAULT))
           case _ => null
