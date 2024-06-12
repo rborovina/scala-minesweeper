@@ -17,11 +17,12 @@ object GameHelper {
     ))
   }
 
-  def calculateScore(bombs: Int, hints: Int, elapsedTime: Int): Int = {
+  def calculateScore(bombs: Int, userActions: Int, hints: Int, elapsedTime: Int): Int = {
     val baseScore = bombs * 10
     val hintPenalty = hints * 5
     val timePenalty = elapsedTime / 60
+    val actionPenalty = userActions * 2
 
-    baseScore - hintPenalty - timePenalty
+    baseScore - hintPenalty - timePenalty - actionPenalty
   }
 }

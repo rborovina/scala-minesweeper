@@ -18,9 +18,10 @@ class ScoresScreen(games: List[Map[String, String]]) extends MainFrame {
   private val headerPanel = new GridPanel(1, columnHeaders.length) {
     columnHeaders.foreach { header =>
       contents += new Label(header) {
-        border = EmptyBorder(1, 1, 1, 1)
+        border = EmptyBorder(5, 5, 5, 5)
       }
     }
+    border = EmptyBorder(10, 10, 10, 10)
   }
 
   private val scorePanel = new GridPanel(sortedGames.length, columnHeaders.length) {
@@ -32,14 +33,15 @@ class ScoresScreen(games: List[Map[String, String]]) extends MainFrame {
         game.getOrElse("Hints", "0"),
         game.getOrElse("Rows", "0"),
         game.getOrElse("Cols", "0"),
-        game.getOrElse("Time", "0")
+        formatTime(game.getOrElse("Time", "0").toInt)
       )
       gameData.foreach { data =>
         contents += new Label(data) {
-          border = EmptyBorder(1, 1, 1, 1)
+          border = EmptyBorder(5, 5, 5, 5)
         }
       }
     }
+    border = EmptyBorder(10, 10, 10, 10)
   }
 
   contents = new ScrollPane(new GridPanel(2, 1) {
@@ -47,4 +49,11 @@ class ScoresScreen(games: List[Map[String, String]]) extends MainFrame {
     contents += scorePanel
   })
   size = new Dimension(600, 400)
+
+  private def formatTime(seconds: Int): String = {
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val secs = seconds % 60
+    f"$hours%02d:$minutes%02d:$secs%02d"
+  }
 }

@@ -14,6 +14,7 @@ import scala.swing.event.{ButtonClicked, MouseClicked}
 import scala.swing.{Action, BorderPanel, Button, Dialog, GridPanel, Label, Menu, MenuBar, MenuItem}
 import actions.LoadGameAction
 import controller.GameController
+import helpers.{FileHelper, GameHelper}
 import model.{BombCell, Cell, EmptyCell}
 import traits.{BoardManager, ScreenManager}
 import types.{GameMap, GameSequence}
@@ -28,6 +29,7 @@ import scala.concurrent.duration.*
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.swing.Swing.ActionListener
+import scala.util.{Failure, Success}
 
 class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence, elapsedTime: Int) extends BaseGridScreen(screenManager) {
 
@@ -38,7 +40,19 @@ class GameScreen(screenManager: ScreenManager, gameId: String, difficulty: Strin
 
   private def handleGameWon(): Unit = {
     timer.stop()
-    Dialog.showMessage(null, "You cleaned up the whole board!", title = "Game won!")
+
+    val (gameId, _, map, gameSequence, elapsedTime) = gameController.pauseTime().getGameData
+
+    val totalBombs = gameController.totalBombs
+    val userActionsCount = gameController.getUserActionsCount
+    val hintsCount = gameController.getHintsCount
+
+    val score = GameHelper.calculateScore(totalBombs, userActionsCount, hintsCount, elapsedTime)
+
+    FileHelper.logCompletedGame(gameId, score, totalBombs, hintsCount, gameController.rows, gameController.columns, elapsedTime) match {
+      case Success(_) => Dialog.showMessage(null, "You cleaned up the whole board!", title = "Game won!")
+      case Failure(ex) => println(s"Failed to log game $gameId: ${ex.getMessage}")
+    }
   }
 
   private var gameController: GameController = new GameController(gameId, difficulty, map, gameSequence, elapsedTime, onGameOver = handleGameOver, onGameWon = handleGameWon).resumeTime()

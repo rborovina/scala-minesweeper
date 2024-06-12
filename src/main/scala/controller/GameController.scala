@@ -13,7 +13,7 @@ import scala.collection.immutable.Set
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
-class GameController(gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence = Array.empty, elapsedTime: Int = 0, onGameOver: () => Unit, onGameWon: () => Unit) extends BoardManager {
+class GameController(gameId: String, difficulty: String, map: GameMap, gameSequence: GameSequence = Array.empty, initialElapsedTime: Int = 0, onGameOver: () => Unit, onGameWon: () => Unit) extends BoardManager {
 
   override val rows: Int = map.length
   override val columns: Int = map(0).length
@@ -23,6 +23,8 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
   override val totalBombs: Int = countTotalBombs(board)
 
   override val totalFlags: Int = countTotalFlags(board)
+
+  private var startTime: Long = System.currentTimeMillis()
 
   private def initialize(map: GameMap, gameSequence: GameSequence): Board = {
     val board: Board = map.map(row => row.map {
@@ -146,7 +148,6 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
         onGameOver()
         revealAllCells(board)
       case _ if isGameCompleted(board) =>
-        logGameCompletion()
         onGameWon()
         revealAllCells(board)
       case _ => revealNeighboringCells(board, row, col)
@@ -196,10 +197,8 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
 
   def getMapDifficulty: MapDifficulty = MapDifficulty.fromName(difficulty)
 
-  private var startTime: Long = System.currentTimeMillis()
-
   def getElapsedTime: Int = {
-    elapsedTime + ((System.currentTimeMillis() - startTime) / 1000).toInt
+    initialElapsedTime + ((System.currentTimeMillis() - startTime) / 1000).toInt
   }
 
   def pauseTime(): GameController = {
@@ -212,7 +211,6 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
     newController.startTime = System.currentTimeMillis()
     newController
   }
-
 
   def provideHint(): GameController = {
     val safeCells = for {
@@ -229,20 +227,9 @@ class GameController(gameId: String, difficulty: String, map: GameMap, gameSeque
     }
   }
 
-  private def getHintsCount: Int = gameSequence.count(_._1 == UserAction.Hint)
+  def getUserActionsCount: Int = gameSequence.length
 
-  private def logGameCompletion(): Unit = {
-    val (gameId, difficulty, map, gameSequence, elapsedTime) = getGameData
-
-    val score = GameHelper.calculateScore(totalBombs, getHintsCount, getElapsedTime)
-
-    println(getElapsedTime)
-
-    FileHelper.logCompletedGame(gameId, score, totalBombs, getHintsCount, rows, columns, getElapsedTime) match {
-      case Success(_) => println(s"Game $gameId logged successfully.")
-      case Failure(ex) => println(s"Failed to log game $gameId: ${ex.getMessage}")
-    }
-  }
+  def getHintsCount: Int = gameSequence.count(_._1 == UserAction.Hint)
 
   private def copy(gameSequence: GameSequence = gameSequence, elapsedTime: Int = getElapsedTime): GameController = {
     new GameController(gameId, difficulty, map, gameSequence, elapsedTime, onGameOver, onGameWon)
