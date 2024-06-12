@@ -129,7 +129,7 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
 
   override protected def handleCellRightClicked(row: Int, col: Int): Unit = {}
 
-  private def updateGrid(transform: Transformation): Unit = {
+  private def updateGrid(transform: Transformation[GameMap]): Unit = {
     mapCreationController = mapCreationController.withUpdatedMap(transform)
     drawScreen(mapCreationController)
   }
@@ -147,13 +147,13 @@ class MapCreationScreen(screenManager: ScreenManager, mapName: String, difficult
         case ButtonClicked(_) => updateGrid(mapCreationController.rotate90DegreesCounterClockwise)
       }
     }
-    
+
     controlPanel.contents += new Button("Rotate Right") {
       reactions += {
         case ButtonClicked(_) => updateGrid(mapCreationController.rotate90DegreesClockwise)
       }
     }
-    
+
     controlPanel.contents += new Button("Reflect Horizontally") {
       reactions += {
         case ButtonClicked(_) => updateGrid(mapCreationController.reflectHorizontally)

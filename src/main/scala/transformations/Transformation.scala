@@ -1,9 +1,7 @@
 package transformations
 
-import types.GameMap
+case class Transformation[T](trans: T => T) {
+  def andThen(next: Transformation[T]): Transformation[T] = Transformation(map => next.trans(trans(map)))
 
-case class Transformation(trans: GameMap => GameMap) {
-  def andThen(next: Transformation): Transformation = Transformation(map => next.trans(trans(map)))
-
-  def apply(map: GameMap): GameMap = trans(map)
+  def apply(map: T): T = trans(map)
 }
