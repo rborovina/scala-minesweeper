@@ -67,7 +67,7 @@ def calculateScore(bombs: Int, hints: Int, elapsedTime: Int, userActions: Int): 
   val baseScore = bombs * 10
   val hintPenalty = hints * 5
   val timePenalty = elapsedTime / 60
-  val actionPenalty = userActions * 2  // Adjust the multiplier as needed
+  val actionPenalty = userActions * 2
 
   baseScore - hintPenalty - timePenalty - actionPenalty
 }
